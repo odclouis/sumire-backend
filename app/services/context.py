@@ -58,6 +58,15 @@ class UserContext:
                 lines.append(f"    action ({story['action_status']}): {story['action'] or 'missing'}")
                 lines.append(f"    outcome ({story['outcome_status']}): {story['outcome'] or 'missing'}")
                 lines.append(f"    evidence ({story['evidence_status']}): {story['evidence'] or 'missing'}")
+                gaps = story.get("gaps") or []
+                if gaps:
+                    for gap in gaps:
+                        lines.append(
+                            f"    gap ({gap['element']}): {gap['gap_description']} "
+                            f"-> {gap['follow_up_question']}"
+                        )
+                else:
+                    lines.append("    gaps: none listed")
         else:
             lines.append("  none yet")
 
@@ -138,7 +147,7 @@ def get_user_context(user_id: str) -> UserContext:
         client.table("power_stories")
         .select(
             "id, title, situation, situation_status, action, action_status, "
-            "outcome, outcome_status, evidence, evidence_status"
+            "outcome, outcome_status, evidence, evidence_status, gaps"
         )
         .eq("user_id", user_id)
         .eq("status", "building")

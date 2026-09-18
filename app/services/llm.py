@@ -327,8 +327,18 @@ def extract_from_message(message: str, context: UserContext) -> Extraction:
     return Extraction.model_validate(tool_use.input)
 
 
-def generate_response(message: str, extraction: Extraction, context: UserContext) -> str:
-    """Run the response call: a short, direct WhatsApp reply shaped by the extraction."""
+def generate_response(
+    message: str,
+    extraction: Extraction,
+    context: UserContext,
+    completeness: int | None = None,
+) -> str:
+    """Run the response call: a short, direct WhatsApp reply shaped by the extraction.
+
+    `completeness`, when given, is this turn's actual computed score (see scoring.py) for the
+    story touched this turn - passed in so the model has ground truth if it needs to reason
+    about progress, since SUMIRE_VOICE forbids it from ever stating that figure directly.
+    """
     ambiguous = is_ambiguous_correction(extraction)
     branch_instruction = (
         prompts.CORRECTION_AMBIGUOUS_INSTRUCTION
@@ -341,6 +351,13 @@ def generate_response(message: str, extraction: Extraction, context: UserContext
     if extraction.story and extraction.story.gaps:
         gap = extraction.story.gaps[0]
         gap_line = f"\nMOST USEFUL FOLLOW-UP QUESTION: {gap.follow_up_question}"
+
+    completeness_line = ""
+    if completeness is not None:
+        completeness_line = (
+            f"\nSTORY COMPLETENESS (ground truth, do not state this number or any number derived "
+            f"from it in your reply): {completeness}/100"
+        )
 
     ambiguity_line = ""
     if ambiguous and extraction.correction_target:
@@ -358,6 +375,7 @@ def generate_response(message: str, extraction: Extraction, context: UserContext
         f"CLASSIFICATION: {extraction.classification} ({extraction.signal_quality})\n"
         f"EXTRACTION SUMMARY: {extraction.summary}"
         f"{gap_line}"
+        f"{completeness_line}"
         f"{ambiguity_line}"
     )
 

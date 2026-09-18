@@ -39,14 +39,12 @@ def _persist_story(
     conversation_id: str,
     skill_names: list[str],
     stakeholder_ids: list[str],
-) -> str | None:
-    """Create or merge the power story named by story_action; return its id, or None if there isn't one."""
+) -> dict | None:
+    """Create or merge the power story named by story_action; return the row, or None if there isn't one."""
     if extraction.story_action == "new" and extraction.story:
-        story = db.create_power_story(user_id, extraction.story.model_dump(), conversation_id, skill_names, stakeholder_ids)
-        return story["id"]
+        return db.create_power_story(user_id, extraction.story.model_dump(), conversation_id, skill_names, stakeholder_ids)
     if extraction.story_action == "update_existing" and extraction.story and extraction.existing_story_id:
-        story = db.update_power_story(extraction.existing_story_id, extraction.story.model_dump(), skill_names, stakeholder_ids)
-        return story["id"]
+        return db.update_power_story(extraction.existing_story_id, extraction.story.model_dump(), skill_names, stakeholder_ids)
     return None
 
 
@@ -161,7 +159,9 @@ async def process_incoming_message(message: IncomingMessage) -> None:
             for stakeholder in extraction.stakeholders
         ]
 
-        story_id = _persist_story(user_id, extraction, inbound["id"], skill_names, stakeholder_ids)
+        story = _persist_story(user_id, extraction, inbound["id"], skill_names, stakeholder_ids)
+        story_id = story["id"] if story else None
+        completeness = story["completeness"] if story else None
 
         _resolve_corrections(user_id, extraction, user_context, story_id)
 
@@ -175,7 +175,7 @@ async def process_incoming_message(message: IncomingMessage) -> None:
         )
 
         response_started = time.perf_counter()
-        reply = llm.generate_response(transcript, extraction, user_context)
+        reply = llm.generate_response(transcript, extraction, user_context, completeness)
         response_ms = (time.perf_counter() - response_started) * 1000
 
         await whatsapp.send_message(message.phone, reply)
