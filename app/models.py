@@ -22,6 +22,17 @@ class UserProfile(BaseModel):
     updated_at: datetime
 
 
+class IncomingMessage(BaseModel):
+    """A single inbound WhatsApp message extracted from a webhook payload."""
+
+    phone: str
+    message_id: str
+    timestamp: datetime
+    type: str
+    text: str | None = None
+    media_id: str | None = None
+
+
 class Conversation(BaseModel):
     """A row in the conversations table."""
 

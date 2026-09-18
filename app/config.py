@@ -12,6 +12,13 @@ class Settings(BaseSettings):
     supabase_url: str
     supabase_service_key: str
     supabase_anon_key: str
+    whatsapp_access_token: str
+    whatsapp_phone_number_id: str
+    whatsapp_business_account_id: str
+    whatsapp_app_secret: str
+    whatsapp_verify_token: str
+    gemini_api_key: str
+    anthropic_api_key: str
     environment: str = "development"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
